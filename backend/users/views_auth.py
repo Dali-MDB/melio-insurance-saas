@@ -7,7 +7,9 @@ from rest_framework import status
 from .models import User
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
-
+from .models import CredResetCode
+from .utils import generate_code
+from rest_framework.permissions import IsAuthenticated
 
 @api_view(['GET'])
 def test(request:Request):
@@ -53,3 +55,64 @@ def login(request:Request):
             'access' : str(access_token)
         }
     return Response(tokens, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+def generate_reset_token(request:Request):
+    if request.user.is_authenticated:
+        user = request.user
+        email = request.user.email
+    else:
+        email = request.data.get('email',None)
+        if not email:
+            return Response({'error':'no email was provided'},status=status.HTTP_400_BAD_REQUEST)
+        #fetch the user
+        user =  User.objects.filter(email=email).first()
+        if not user:
+            return Response({'error':'no account with this email is registered into our system'},status=status.HTTP_400_BAD_REQUEST)       
+        
+    
+    code = CredResetCode.objects.filter(user=user).first()
+    if code:   #delete it
+        code.delete()
+    #generate a new code
+    code = CredResetCode.objects.create(user=user,code=generate_code(6))
+    return Response({
+        'detail':'the reset code has been sent to you successfully'
+    })
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def update_email(request:Request):
+    old_email = request.user.email
+    new_email = request.data.get('new_email',None)
+    if not new_email:
+        return Response({'error':'new email is required'},status=status.HTTP_400_BAD_REQUEST)
+    if new_email == old_email:
+        return Response({'error':'new email is the same as the old email'},status=status.HTTP_400_BAD_REQUEST)
+    #check if the new email is already in use
+    if User.objects.filter(email=new_email).exists():
+        return Response({'error':'new email is already in use'},status=status.HTTP_400_BAD_REQUEST)
+    #update the email
+    request.user.email = new_email
+    request.user.save()
+    return Response({'detail':'the email has been updated successfully','user':UserSerializer(request.user).data},status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def update_password(request:Request):
+    old_password = request.data.get('old_password',None)
+    new_password = request.data.get('new_password',None)
+    new_password_confirm = request.data.get('new_password_confirm',None)
+    if not old_password or not new_password or not new_password_confirm:
+        return Response({'error':'old password and new password are required'},status=status.HTTP_400_BAD_REQUEST)
+    #check if the old password is correct
+    if not request.user.check_password(old_password):
+        return Response({'error':'old password is incorrect'},status=status.HTTP_400_BAD_REQUEST)
+    if new_password != new_password_confirm:
+        return Response({'error':'new password and new password confirm do not match'},status=status.HTTP_400_BAD_REQUEST)
+    #update the password
+    request.user.set_password(new_password)
+    request.user.save()
+    return Response({'detail':'the password has been updated successfully','user':UserSerializer(request.user).data},status=status.HTTP_200_OK)

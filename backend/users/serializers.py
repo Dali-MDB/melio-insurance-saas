@@ -40,3 +40,5 @@ class UserSerializer(serializers.ModelSerializer):
             password=password,
             **validated_data  # remaining fields go as extra_fields
         )
+    
+

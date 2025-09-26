@@ -3,6 +3,8 @@ from django.contrib.auth.models import AbstractUser
 from .managers import UserManager
 from tenants_manager.models import InsuranceCompany
 from django.utils.translation import gettext_lazy as _
+from django.utils import timezone
+from datetime import datetime, timedelta
 # Create your models here.
 
 import uuid
@@ -35,3 +37,16 @@ class User(AbstractUser):
 
     def __str__(self):
         return f'{self.username}-{self.email}'
+
+
+
+class CredResetCode(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    code = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def is_expired(self):
+        return timezone.now() > self.created_at + timedelta(minutes=10)
+
+    def __str__(self):
+        return f"{self.user.email} - {self.code}"
