@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+*.manifest
+*.spec
+
+# Virtual environment
+ten/
+venv/
+.env/
+*.env
+
+# Django stuff
+db.sqlite3
+*.log
+media/
+staticfiles/
+
+# IDEs / Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Byte-compiled / cache
+*.DS_Store
+Thumbs.db
+
+# Migrations (optional — keep if you don’t want auto-generated ones in git)
+# */migrations/*.py
+# !*/migrations/__init__.py
