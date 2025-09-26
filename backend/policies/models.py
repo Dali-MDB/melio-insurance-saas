@@ -1,5 +1,6 @@
 from django.db import models
 from tenants_manager.models import InsuranceCompany
+from django.utils import timezone
 
 # Create your models here.
 class Policy(models.Model):
@@ -27,3 +28,11 @@ class Policy(models.Model):
     start_date = models.DateField()
     end_date = models.DateField()
     is_active = models.BooleanField(default=True)
+
+
+    @property
+    def is_valid(self):
+        return self.start_date <= timezone.now().date() <= self.end_date and self.is_active
+
+    def __str__(self):
+        return f'policy: {self.policy_number} - {self.policyholder_email}' 
