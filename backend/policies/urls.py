@@ -5,4 +5,6 @@ from . import views
 urlpatterns = [
     path('',view=views.ListCreatePolicy.as_view()),
     path('<int:policy_id>/',view=views.GetEditDeletePolicy.as_view()),
+    path('<int:policy_id>/renew/',view=views.renew_policy),
+    path('search/',view=views.search_policy),
 ]
