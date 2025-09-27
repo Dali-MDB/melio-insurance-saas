@@ -8,12 +8,27 @@ class ClaimDocumentSerializer(serializers.ModelSerializer):
     class Meta:
         model = ClaimDocument
         fields = '__all__'
+        read_only_fields = ['created_at','uploaded_by']
 
 
 class ClaimNoteSerializer(serializers.ModelSerializer):
     class Meta:
         model = ClaimNote
         fields = '__all__'
+        read_only_fields = ['created_at','author','claim']
+
+        def update(self, instance, validated_data):
+            excluded_data = ['created_at','claim','author']
+            for v in excluded_data:                
+                validated_data.pop(v,None)
+            
+            for key, val in validated_data.items():
+                setattr(instance,key,val)
+            
+            instance.save()
+            return instance
+            
+            
 
 
 class ClaimSerializer(serializers.ModelSerializer):

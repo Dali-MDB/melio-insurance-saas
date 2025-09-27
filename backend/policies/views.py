@@ -88,3 +88,4 @@ def search_policy(request:Request):
         )
     return Response(PolicySerializer(policies,many=True).data,200)
 
+

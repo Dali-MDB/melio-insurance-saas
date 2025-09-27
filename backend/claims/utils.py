@@ -8,4 +8,10 @@ def generate_claim_number(length=4,repeat=3):
         rslt +='-'
     return 'CLM-'+rslt[:-2]    #to get rid of the last -
 
-
+import uuid
+def is_valid_uuid4(value):
+    try:
+        potential_uuid = uuid.UUID(str(value)) 
+        return potential_uuid.version == 4
+    except ValueError:
+        return False
