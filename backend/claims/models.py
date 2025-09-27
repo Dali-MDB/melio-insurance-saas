@@ -56,7 +56,7 @@ class ClaimNote(models.Model):
         return f'claim-note: {self.claim.claim_number} - {self.created_at}'
 
 def get_file_name(instance,filename):
-    return os.path.join('claim_documents',str(instance.claim.number),filename)
+    return os.path.join('claim_documents',str(instance.claim.claim_number),filename)
 
 class ClaimDocument(models.Model):
     claim = models.ForeignKey(Claim, on_delete=models.CASCADE, related_name='documents')
@@ -72,6 +72,12 @@ class ClaimDocument(models.Model):
     uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE)
     uploaded_at = models.DateTimeField(auto_now_add=True)
     description = models.CharField(max_length=200, blank=True)
+
+    def delete(self, *args, **kwargs):
+        # delete file from storage before deleting the record
+        if self.file:
+            self.file.delete(save=False)
+        super().delete(*args, **kwargs)
 
 
     def __str__(self):

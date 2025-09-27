@@ -80,6 +80,7 @@ def add_note(request:Request,claim_id:int):
         return Response(ClaimNoteSerializer(note).data,201)
     return Response(note_ser.errors,400)
 
+
 class NoteDetails(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -105,4 +106,37 @@ class NoteDetails(APIView):
     
 
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def add_document(request:Request,claim_id:int):
+    claim = get_object_or_404(Claim,pk=claim_id)
+    note_ser = ClaimDocumentSerializer(data=request.data)
+    if note_ser.is_valid():
+        note = note_ser.save(uploaded_by=request.user, claim=claim)
+        return Response(ClaimDocumentSerializer(note).data,201)
+    return Response(note_ser.errors,400)
 
+
+class documentDetails(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def fetch_document(self,document_id:int):
+        return get_object_or_404(ClaimDocument,pk=document_id)
+    
+    def get(self,request,document_id:int):
+        document = self.fetch_document(document_id)
+        return Response(ClaimDocumentSerializer(document).data,200)
+
+    def put(self,request,document_id:int):
+        document = self.fetch_document(document_id)
+        document_ser = ClaimDocumentSerializer(document, data=request.data, partial = True)
+        if document_ser.is_valid():
+            document = document_ser.save()
+            return Response(ClaimDocumentSerializer(document).data,201)
+        return Response(document_ser.errors,400)
+    
+    def delete(self,request,document_id:int):
+        document = self.fetch_document(document_id)
+        document.delete()
+        return Response({'detail':'the hote has been deleted successfully'},200)
+    
