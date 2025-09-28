@@ -8,7 +8,7 @@ from .serializers import ClaimSerializer, ClaimNoteSerializer, ClaimDocumentSeri
 from rest_framework.permissions import IsAuthenticated
 from policies.models import Policy
 from django.shortcuts import get_object_or_404
-from .utils import generate_claim_number, is_valid_uuid4
+from .utils import generate_claim_number, is_valid_uuid4, is_valid_status_transition
 from rest_framework.request import Request
 # Create your views here.
 
@@ -140,3 +140,20 @@ class documentDetails(APIView):
         document.delete()
         return Response({'detail':'the hote has been deleted successfully'},200)
     
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def update_claim_status(request:Request,claim_id:int):
+    claim = get_object_or_404(Claim,pk=claim_id)
+    new_status = request.GET.get('new_status',None)
+    if not new_status:
+        return Response({'detail':'no status query parameter has been provided'},400)
+
+    if not is_valid_status_transition(claim.status, new_status):
+        return Response({'detail':'the transition to the new status you have provided is not approved'},400)
+    
+    #update the status
+    claim.status = new_status
+    claim.save()
+    return Response(ClaimSerializer(claim).data,200)
+
+

@@ -6,6 +6,20 @@ from policies.models import Policy
 from users.models import User
 import os
 
+STATUS_CHOICES = [
+        ('reported', 'Reported'),           # Initial state - claim created by call center
+        ('assigned', 'Assigned'),           # Assigned to a specific adjuster
+        ('under_review', 'Under Review'),   # Initial review phase
+        ('investigation', 'Investigation'), # Deep investigation phase
+        ('documents_requested', 'Documents Requested'), # Waiting for customer docs
+        ('waiting_approval', 'Waiting Approval'), # Ready for manager decision
+        ('approved', 'Approved'),           # Manager approved the payout
+        ('denied', 'Denied'),               # Manager denied the claim
+        ('payment_processing', 'Payment Processing'), # Finance processing payout
+        ('paid', 'Paid'),                   # Payment sent to customer
+        ('closed', 'Closed'),               # Final state - claim completed
+    ]
+    
 # Create your models here.
 class Claim(models.Model):
     claim_number = models.CharField(max_length=50, unique=True)  # Auto-generated
@@ -16,21 +30,15 @@ class Claim(models.Model):
     description = models.TextField()
     
     # Realistic status flow
-    status = models.CharField(max_length=20, choices=[
-        ('reported', 'Reported'),
-        ('assigned', 'Assigned'),
-        ('investigation', 'Investigation'),
-        ('approved', 'Approved'),
-        ('denied', 'Denied'),
-        ('paid', 'Paid')
-    ], default='reported')
+   
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='reported')
     
     # Financials
     claim_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     approved_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     
     # Assignment
-    assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL,related_name='assigned_claims', null=True, blank=True)
     
     # Timestamps
     incident_date = models.DateField()

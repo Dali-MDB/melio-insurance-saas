@@ -15,3 +15,21 @@ def is_valid_uuid4(value):
         return potential_uuid.version == 4
     except ValueError:
         return False
+    
+
+
+def is_valid_status_transition(current_status, new_status):
+    allowed_transitions = {
+        'reported': ['assigned', 'denied'],
+        'assigned': ['under_review', 'documents_requested', 'denied'],
+        'under_review': ['investigation', 'documents_requested'],
+        'investigation': ['waiting_approval', 'documents_requested'],
+        'documents_requested': ['investigation', 'waiting_approval'],
+        'waiting_approval': ['approved', 'denied'],
+        'approved': ['payment_processing'],
+        'payment_processing': ['paid'],
+        'paid': ['closed'],
+        'denied': ['closed'],
+    }
+    
+    return new_status in allowed_transitions.get(current_status, [])
