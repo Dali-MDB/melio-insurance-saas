@@ -8,6 +8,7 @@ urlpatterns = [
     path('users/',include('users.urls')),
     path('policies/',include('policies.urls')),
     path('',include('claims.urls')),
+    path('reports/',include('reports.urls')),
 ]
 
 if settings.DEBUG:

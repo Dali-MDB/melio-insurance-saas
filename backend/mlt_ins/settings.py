@@ -57,6 +57,7 @@ TENANT_APPS = [
     'users',   
     'policies',
     'claims',  
+    'reports',
 ]
 
 INSTALLED_APPS = SHARED_APPS+TENANT_APPS
