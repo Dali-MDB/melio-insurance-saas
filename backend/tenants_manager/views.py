@@ -11,6 +11,7 @@ from rest_framework import status
 from django_tenants.utils import schema_context, tenant_context
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.hashers import make_password
+from .utils import send_email
 
 # Create your views here.
 @api_view(['POST'])
@@ -69,8 +70,7 @@ def approve_registration_request(request:Request,request_id:int):
             password=reg_req.admin_password,
         )
     #send email to admin (implement later)
-
-
+    send_email(reg_req.admin_email, "Registration Approved", "Your registration has been approved\n\nYour login credentials are:\nEmail: {reg_req.admin_email}\nPassword: {reg_req.admin_password} \n\nPlease login to the platform via the following link: {domain.domain}")
 
     #delete the registration request
     reg_req.delete()
