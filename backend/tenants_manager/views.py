@@ -84,3 +84,16 @@ def reject_registration_request(request:Request,request_id:int):
     reg_req = get_object_or_404(RegistrationRequest,pk=request_id)
     reg_req.delete()
     return Response({"message": "Registration rejected"}, status=status.HTTP_200_OK)
+
+
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def add_global_admin(request:Request):
+    user_ser = UserSerializer(data=request.data)
+    if user_ser.is_valid():
+        user = user_ser.save(scope='global',is_admin=True)
+        return Response({"message": "Global admin added"}, status=status.HTTP_200_OK)
+    return Response(user_ser.errors, status=status.HTTP_400_BAD_REQUEST)
+    
