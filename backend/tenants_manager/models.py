@@ -42,3 +42,33 @@ class InsuranceCompany(TenantMixin):
 
 class Domain(DomainMixin):
     pass
+
+
+
+
+class RegistrationRequest(models.Model):
+    # === COMPANY INFORMATION (from InsuranceCompany) ===
+    company_name = models.CharField(max_length=200)
+    business_type = models.CharField(max_length=50, choices=InsuranceCompany._meta.get_field('business_type').choices)
+    company_phone = models.CharField(max_length=20)
+    contact_email = models.EmailField()
+    company_address = models.TextField()
+    company_linkedin = models.CharField(max_length=150, blank=True, null=True)
+    default_currency = models.CharField(max_length=3, default='USD')
+    subscription_plan = models.CharField(max_length=20, choices=[
+        ('basic', 'Basic'),
+        ('pro', 'Pro')
+    ], default='basic')
+    requested_domain = models.CharField(max_length=100)
+    
+    # === ADMIN USER INFORMATION (from User) ===
+    admin_email = models.EmailField()  # Will become username & email
+    admin_phone = models.CharField(max_length=15)
+    admin_first_name = models.CharField(max_length=30)
+    admin_last_name = models.CharField(max_length=30)
+    admin_username = models.CharField(max_length=30)  # Explicit username
+    admin_password = models.CharField(max_length=128)
+
+
+    def __str__(self):
+        return f"request:{self.company_name}"
