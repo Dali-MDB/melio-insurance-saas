@@ -1,5 +1,8 @@
 from django.db import models
 from django_tenants.models import TenantMixin, DomainMixin
+from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
+from .admin_manager import AdminManager
+
 
 # Create your models here.
 class InsuranceCompany(TenantMixin):
@@ -72,3 +75,36 @@ class RegistrationRequest(models.Model):
 
     def __str__(self):
         return f"request:{self.company_name}"
+    
+
+
+
+class Admin(AbstractBaseUser, PermissionsMixin):
+    email = models.EmailField(unique=True)
+    full_name = models.CharField(max_length=255)
+    username = models.CharField(max_length=150, unique=True)
+    phone_number = models.CharField(max_length=20, blank=True, null=True)
+
+    is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=True)  # so they can log into admin site
+
+    date_joined = models.DateTimeField(auto_now_add=True)
+
+    objects = AdminManager()
+
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = ["full_name"]
+
+    groups = models.ManyToManyField(
+        "auth.Group",
+        related_name="platform_admins", 
+        blank=True,
+    )
+    user_permissions = models.ManyToManyField(
+        "auth.Permission",
+        related_name="platform_admins_permissions",  
+        blank=True,
+    )
+
+    def __str__(self):
+        return self.email

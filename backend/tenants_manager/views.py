@@ -94,6 +94,6 @@ def add_global_admin(request:Request):
     user_ser = UserSerializer(data=request.data)
     if user_ser.is_valid():
         user = user_ser.save(scope='global',is_admin=True)
-        return Response({"message": "Global admin added"}, status=status.HTTP_200_OK)
+        return Response({"message": "Global admin added","user":UserSerializer(user).data}, status=status.HTTP_200_OK)
     return Response(user_ser.errors, status=status.HTTP_400_BAD_REQUEST)
     
