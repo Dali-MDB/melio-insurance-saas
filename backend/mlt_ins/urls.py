@@ -9,9 +9,10 @@ urlpatterns = [
     path('policies/',include('policies.urls')),
     path('',include('claims.urls')),
     path('reports/',include('reports.urls')),
+    path('administration/',include('administration.urls')),
 
     #public schema urls
-    path('api/',include('tenants_manager.urls')),
+    #path('api/',include('tenants_manager.urls')),
 ]
 
 if settings.DEBUG:
