@@ -10,13 +10,14 @@ from policies.models import Policy
 from django.shortcuts import get_object_or_404
 from .utils import generate_claim_number, is_valid_uuid4, is_valid_status_transition
 from rest_framework.request import Request
+from .permissions import ClaimCreationPermission, ClaimPermissions, AssignClaimPermission, CreateClaimNotePermission, CreateClaimDocumentPermission, ClaimNotePermissions, ClaimDocumentPermissions, UpdateClaimStatusPermission
 # Create your views here.
 
 
 
 class ListCreateClaim(ListCreateAPIView):
     serializer_class = ClaimSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ClaimCreationPermission]
 
     def get_policy(self):
         policy_id = self.kwargs['policy_id']
@@ -43,7 +44,7 @@ class ListCreateClaim(ListCreateAPIView):
 class GetEditDeleteClaim(RetrieveUpdateDestroyAPIView):
     serializer_class = ClaimSerializer
     queryset = Claim.objects.all()
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ClaimPermissions]
     lookup_field = 'claim_id'
 
     def get_object(self):
@@ -56,7 +57,7 @@ class GetEditDeleteClaim(RetrieveUpdateDestroyAPIView):
     
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, AssignClaimPermission])
 def assign_claim(request:Request,claim_id:int):
     claim = get_object_or_404(Claim,pk=claim_id)
     user_id = request.GET.get('user_id',None)
@@ -71,7 +72,7 @@ def assign_claim(request:Request,claim_id:int):
 
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, CreateClaimNotePermission])
 def add_note(request:Request,claim_id:int):
     claim = get_object_or_404(Claim,pk=claim_id)
     note_ser = ClaimNoteSerializer(data=request.data)
@@ -82,7 +83,7 @@ def add_note(request:Request,claim_id:int):
 
 
 class NoteDetails(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ClaimNotePermissions]
 
     def fetch_note(self,note_id:int):
         return get_object_or_404(ClaimNote,pk=note_id)
@@ -107,7 +108,7 @@ class NoteDetails(APIView):
 
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, CreateClaimDocumentPermission])
 def add_document(request:Request,claim_id:int):
     claim = get_object_or_404(Claim,pk=claim_id)
     note_ser = ClaimDocumentSerializer(data=request.data)
@@ -118,7 +119,7 @@ def add_document(request:Request,claim_id:int):
 
 
 class documentDetails(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ClaimDocumentPermissions]
 
     def fetch_document(self,document_id:int):
         return get_object_or_404(ClaimDocument,pk=document_id)
@@ -141,7 +142,7 @@ class documentDetails(APIView):
         return Response({'detail':'the hote has been deleted successfully'},200)
     
 @api_view(['PUT'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, UpdateClaimStatusPermission])
 def update_claim_status(request:Request,claim_id:int):
     claim = get_object_or_404(Claim,pk=claim_id)
     new_status = request.GET.get('new_status',None)

@@ -19,9 +19,7 @@ from .utils import send_email
 def register(request:Request):
     serializer = RegistrationRequestSerializer(data=request.data)
     if serializer.is_valid():
-        # print(request.data['requested_domain'])
-        # print(Domain.objects.filter(domain=request.data['requested_domain']).exists())
-        # print(Domain.objects.all())
+        request.data['requested_domain']+=".localhost"
         if Domain.objects.filter(domain=request.data['requested_domain']).exists() or RegistrationRequest.objects.filter(requested_domain=request.data['requested_domain']).exists():
             return Response({'error':'Domain already exists'}, status=status.HTTP_400_BAD_REQUEST)
         instance = serializer.save()
