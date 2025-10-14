@@ -10,13 +10,14 @@ from rest_framework.request import Request
 from datetime import datetime
 from rest_framework.response import Response
 from django.db.models import Q
+from .permissions import PolicyPermission
 # Create your views here.
 
 
 
 class ListCreatePolicy(ListCreateAPIView):
     serializer_class = PolicySerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,PolicyPermission]
     queryset = Policy.objects.all()
     
 
@@ -27,7 +28,7 @@ class ListCreatePolicy(ListCreateAPIView):
 
 class GetEditDeletePolicy(RetrieveUpdateDestroyAPIView):
     serializer_class = PolicySerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,PolicyPermission]
     queryset = Policy.objects.all()
     lookup_field = 'policy_id'
 
