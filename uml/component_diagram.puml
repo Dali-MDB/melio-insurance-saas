@@ -1,0 +1,100 @@
+@startuml Component Diagram - Multi-Tenant Insurance System
+
+!define COMPONENT_COLOR #E8F5E8
+!define INTERFACE_COLOR #4CAF50
+
+package "Django Multi-Tenant Insurance Platform" {
+    
+    package "Public Schema" {
+        component [Tenants Manager] as TM {
+            interface [Registration API] as RegAPI
+            interface [Domain Management] as DM
+            interface [Company Management] as CM
+        }
+        
+        component [Administration] as Admin {
+            interface [Registration Review] as RR
+            interface [Global Admin] as GA
+        }
+    }
+    
+    package "Tenant Schema" {
+        component [Users Management] as Users {
+            interface [Authentication] as Auth
+            interface [User CRUD] as UserCRUD
+            interface [Profile Management] as Profile
+        }
+        
+        component [Policies Management] as Policies {
+            interface [Policy CRUD] as PolicyCRUD
+            interface [Policy Search] as PolicySearch
+            interface [Policy Renewal] as PolicyRenewal
+        }
+        
+        component [Claims Management] as Claims {
+            interface [Claim CRUD] as ClaimCRUD
+            interface [Claim Assignment] as ClaimAssign
+            interface [Status Management] as StatusMgmt
+            interface [Notes Management] as NotesMgmt
+            interface [Documents Management] as DocsMgmt
+        }
+        
+        component [Reports Management] as Reports {
+            interface [Report CRUD] as ReportCRUD
+            interface [Report Generation] as ReportGen
+        }
+    }
+    
+    package "Shared Services" {
+        component [JWT Authentication] as JWT
+        component [Permission System] as Perms
+        component [File Storage] as Storage
+        component [Email Service] as Email
+    }
+    
+    package "Database" {
+        database "PostgreSQL" as DB {
+            component "Public Schema" as PublicDB
+            component "Tenant Schemas" as TenantDB
+        }
+    }
+}
+
+' External Systems
+cloud "Insurance Companies" as Companies
+cloud "End Users" as EndUsers
+cloud "Administrators" as Admins
+
+' Connections
+Companies --> RegAPI : Registration Request
+Admins --> RR : Review Applications
+Admins --> GA : Manage Platform
+
+EndUsers --> Auth : Login/Register
+EndUsers --> UserCRUD : Manage Users
+EndUsers --> PolicyCRUD : Manage Policies
+EndUsers --> ClaimCRUD : Manage Claims
+EndUsers --> ReportCRUD : Generate Reports
+
+' Internal connections
+TM --> DB : Store Registration Data
+Admin --> DB : Manage Applications
+Users --> JWT : Token Management
+Users --> Perms : Access Control
+Policies --> DB : Policy Data
+Claims --> Storage : Document Files
+Claims --> DB : Claim Data
+Reports --> DB : Report Data
+
+JWT --> Perms : Authentication
+Storage --> Email : File Notifications
+
+' Database connections
+TM --> PublicDB
+Admin --> PublicDB
+Users --> TenantDB
+Policies --> TenantDB
+Claims --> TenantDB
+Reports --> TenantDB
+
+@enduml

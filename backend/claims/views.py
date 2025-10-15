@@ -16,6 +16,26 @@ from .permissions import ClaimCreationPermission, ClaimPermissions, AssignClaimP
 
 
 class ListCreateClaim(ListCreateAPIView):
+    """
+    List and create claims for a specific policy
+    
+    Goal: Get all claims for a policy or create a new claim
+    Path: GET/POST /policy/{policy_id}/claims/
+    Authentication: JWT required, ClaimCreationPermission
+    
+    Request Body (POST):
+    {
+        "title": "Claim title",
+        "description": "Detailed claim description",
+        "claim_amount": 5000.00,
+        "incident_date": "2024-01-15"
+    }
+    
+    Response:
+    - GET 200: [ClaimSerializer objects]
+    - POST 201: ClaimSerializer object with auto-generated claim_number
+    - POST 400: {"field_name": ["error message"]}
+    """
     serializer_class = ClaimSerializer
     permission_classes = [IsAuthenticated, ClaimCreationPermission]
 
@@ -42,6 +62,27 @@ class ListCreateClaim(ListCreateAPIView):
 
 
 class GetEditDeleteClaim(RetrieveUpdateDestroyAPIView):
+    """
+    Retrieve, update or delete a specific claim
+    
+    Goal: Get claim details, update claim info, or delete claim
+    Path: GET/PUT/PATCH/DELETE /policy/{policy_id}/claims/{claim_id}/
+    Authentication: JWT required, ClaimPermissions
+    
+    Request Body (PUT/PATCH):
+    {
+        "title": "Updated claim title",
+        "description": "Updated description",
+        "claim_amount": 7500.00,
+        "approved_amount": 6000.00
+    }
+    
+    Response:
+    - GET 200: ClaimSerializer object
+    - PUT/PATCH 200: Updated ClaimSerializer object
+    - DELETE 204: No content
+    - 404: Claim not found
+    """
     serializer_class = ClaimSerializer
     queryset = Claim.objects.all()
     permission_classes = [IsAuthenticated, ClaimPermissions]
@@ -59,6 +100,21 @@ class GetEditDeleteClaim(RetrieveUpdateDestroyAPIView):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, AssignClaimPermission])
 def assign_claim(request:Request,claim_id:int):
+    """
+    Assign a claim to a specific user
+    
+    Goal: Assign claim to adjuster, senior adjuster, or manager
+    Path: POST /claims/{claim_id}/assign/?user_id={uuid}
+    Authentication: JWT required, AssignClaimPermission
+    
+    Query Parameters:
+    - user_id: UUID4 of the user to assign claim to
+    
+    Response:
+    - 200: Updated ClaimSerializer object with assigned_to field
+    - 400: {"error": "no user was provided"} or {"error": "please provide a valid uuid4 user_id"}
+    - 404: Claim or User not found
+    """
     claim = get_object_or_404(Claim,pk=claim_id)
     user_id = request.GET.get('user_id',None)
     if not user_id:
@@ -74,6 +130,24 @@ def assign_claim(request:Request,claim_id:int):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, CreateClaimNotePermission])
 def add_note(request:Request,claim_id:int):
+    """
+    Add a note to a claim
+    
+    Goal: Add internal or external note to existing claim
+    Path: POST /claims/{claim_id}/add-note/
+    Authentication: JWT required, CreateClaimNotePermission
+    
+    Request Body:
+    {
+        "note": "Note content",
+        "is_internal": true
+    }
+    
+    Response:
+    - 201: Created ClaimNoteSerializer object
+    - 400: Validation errors
+    - 404: Claim not found
+    """
     claim = get_object_or_404(Claim,pk=claim_id)
     note_ser = ClaimNoteSerializer(data=request.data)
     if note_ser.is_valid():
@@ -83,6 +157,25 @@ def add_note(request:Request,claim_id:int):
 
 
 class NoteDetails(APIView):
+    """
+    Retrieve, update or delete a specific claim note
+    
+    Goal: Get note details, update note content, or delete note
+    Path: GET/PUT/DELETE /notes/{note_id}/
+    Authentication: JWT required, ClaimNotePermissions
+    
+    Request Body (PUT):
+    {
+        "note": "Updated note content",
+        "is_internal": false
+    }
+    
+    Response:
+    - GET 200: ClaimNoteSerializer object
+    - PUT 201: Updated ClaimNoteSerializer object
+    - DELETE 200: {"detail": "the note has been deleted successfully"}
+    - 404: Note not found
+    """
     permission_classes = [IsAuthenticated, ClaimNotePermissions]
 
     def fetch_note(self,note_id:int):
@@ -110,6 +203,25 @@ class NoteDetails(APIView):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, CreateClaimDocumentPermission])
 def add_document(request:Request,claim_id:int):
+    """
+    Upload and attach document to a claim
+    
+    Goal: Upload document files (photos, reports, estimates) to claim
+    Path: POST /claims/{claim_id}/add-document/
+    Authentication: JWT required, CreateClaimDocumentPermission
+    
+    Request Body (multipart/form-data):
+    {
+        "document_type": "photo|police_report|estimate|medical_bill|invoice|other",
+        "file": "uploaded_file",
+        "description": "Optional description"
+    }
+    
+    Response:
+    - 201: Created ClaimDocumentSerializer object
+    - 400: Validation errors
+    - 404: Claim not found
+    """
     claim = get_object_or_404(Claim,pk=claim_id)
     note_ser = ClaimDocumentSerializer(data=request.data)
     if note_ser.is_valid():
@@ -119,6 +231,25 @@ def add_document(request:Request,claim_id:int):
 
 
 class documentDetails(APIView):
+    """
+    Retrieve, update or delete a specific claim document
+    
+    Goal: Get document details, update document metadata, or delete document
+    Path: GET/PUT/DELETE /documents/{document_id}/
+    Authentication: JWT required, ClaimDocumentPermissions
+    
+    Request Body (PUT):
+    {
+        "document_type": "updated_type",
+        "description": "Updated description"
+    }
+    
+    Response:
+    - GET 200: ClaimDocumentSerializer object
+    - PUT 201: Updated ClaimDocumentSerializer object
+    - DELETE 200: {"detail": "the document has been deleted successfully"}
+    - 404: Document not found
+    """
     permission_classes = [IsAuthenticated, ClaimDocumentPermissions]
 
     def fetch_document(self,document_id:int):
@@ -144,6 +275,24 @@ class documentDetails(APIView):
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated, UpdateClaimStatusPermission])
 def update_claim_status(request:Request,claim_id:int):
+    """
+    Update claim status following valid state transitions
+    
+    Goal: Change claim status through approved workflow states
+    Path: PUT /claims/{claim_id}/update-status/?new_status={status}
+    Authentication: JWT required, UpdateClaimStatusPermission
+    
+    Query Parameters:
+    - new_status: One of [reported, assigned, under_review, investigation, 
+      documents_requested, waiting_approval, approved, denied, 
+      payment_processing, paid, closed]
+    
+    Response:
+    - 200: Updated ClaimSerializer object with new status
+    - 400: {"detail": "no status query parameter has been provided"} or 
+      {"detail": "the transition to the new status you have provided is not approved"}
+    - 404: Claim not found
+    """
     claim = get_object_or_404(Claim,pk=claim_id)
     new_status = request.GET.get('new_status',None)
     if not new_status:

@@ -1,0 +1,176 @@
+@startuml Class Diagram - Multi-Tenant Insurance System
+
+!define ENTITY_COLOR #E1F5FE
+!define RELATION_COLOR #0277BD
+
+package "Public Schema" as Public {
+    class InsuranceCompany {
+        + id: UUID
+        + name: String
+        + code: String
+        + logo: ImageField
+        + business_type: Choice
+        + contact_email: EmailField
+        + contact_phone: String
+        + linkedin: String
+        + address: TextField
+        + default_currency: String
+        + subscription_plan: Choice
+        + created_on: Date
+        --
+        + __str__(): String
+    }
+
+    class Domain {
+        + id: UUID
+        + domain: String
+        + tenant: ForeignKey(InsuranceCompany)
+        + is_primary: Boolean
+    }
+
+    class RegistrationRequest {
+        + id: UUID
+        + company_name: String
+        + business_type: Choice
+        + company_phone: String
+        + contact_email: EmailField
+        + company_address: TextField
+        + company_linkedin: String
+        + default_currency: String
+        + subscription_plan: Choice
+        + requested_domain: String
+        + admin_email: EmailField
+        + admin_phone: String
+        + admin_first_name: String
+        + admin_last_name: String
+        + admin_username: String
+        + admin_password: String
+        --
+        + __str__(): String
+    }
+
+    class Admin {
+        + id: UUID
+        + email: EmailField
+        + full_name: String
+        + username: String
+        + phone_number: String
+        + is_active: Boolean
+        + is_staff: Boolean
+        + date_joined: DateTime
+    }
+}
+
+package "Tenant Schema" as Tenant {
+    class User {
+        + id: UUID
+        + email: EmailField
+        + username: String
+        + phone_number: String
+        + is_admin: Boolean
+        + role: Choice
+        + tenant: ForeignKey(InsuranceCompany)
+        + scope: Choice
+        --
+        + __str__(): String
+    }
+
+    class CredResetCode {
+        + id: UUID
+        + user: ForeignKey(User)
+        + code: String
+        + created_at: DateTime
+        --
+        + is_expired(): Boolean
+        + __str__(): String
+    }
+
+    class Policy {
+        + id: UUID
+        + policy_number: String
+        + tenant: ForeignKey(InsuranceCompany)
+        + policyholder_name: String
+        + policyholder_email: EmailField
+        + policy_type: Choice
+        + coverage_amount: DecimalField
+        + premium: DecimalField
+        + start_date: Date
+        + end_date: Date
+        + is_active: Boolean
+        --
+        + is_valid: Property
+        + __str__(): String
+    }
+
+    class Claim {
+        + id: UUID
+        + claim_number: String
+        + tenant: ForeignKey(InsuranceCompany)
+        + policy: ForeignKey(Policy)
+        + title: String
+        + description: TextField
+        + status: Choice
+        + claim_amount: DecimalField
+        + approved_amount: DecimalField
+        + assigned_to: ForeignKey(User)
+        + incident_date: Date
+        + created_at: DateTime
+        + updated_at: DateTime
+        --
+        + __str__(): String
+    }
+
+    class ClaimNote {
+        + id: UUID
+        + claim: ForeignKey(Claim)
+        + author: ForeignKey(User)
+        + note: TextField
+        + is_internal: Boolean
+        + created_at: DateTime
+        --
+        + __str__(): String
+    }
+
+    class ClaimDocument {
+        + id: UUID
+        + claim: ForeignKey(Claim)
+        + document_type: Choice
+        + file: FileField
+        + uploaded_by: ForeignKey(User)
+        + uploaded_at: DateTime
+        + description: String
+        --
+        + delete(): Method
+        + __str__(): String
+    }
+
+    class Report {
+        + id: UUID
+        + tenant: ForeignKey(InsuranceCompany)
+        + created_by: ForeignKey(User)
+        + title: String
+        + description: TextField
+        + report_type: Choice
+        + created_at: DateTime
+        + updated_at: DateTime
+    }
+}
+
+' Relationships
+InsuranceCompany ||--o{ Domain : "has domains"
+InsuranceCompany ||--o{ User : "tenant users"
+InsuranceCompany ||--o{ Policy : "tenant policies"
+InsuranceCompany ||--o{ Claim : "tenant claims"
+InsuranceCompany ||--o{ Report : "tenant reports"
+
+Policy ||--o{ Claim : "policy claims"
+User ||--o{ Claim : "assigned claims"
+User ||--o{ ClaimNote : "authored notes"
+User ||--o{ ClaimDocument : "uploaded documents"
+User ||--o{ Report : "created reports"
+User ||--o{ CredResetCode : "reset codes"
+
+Claim ||--o{ ClaimNote : "claim notes"
+Claim ||--o{ ClaimDocument : "claim documents"
+
+@enduml

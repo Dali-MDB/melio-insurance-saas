@@ -20,6 +20,16 @@ from .utils import generate_valid_schema_name
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_registration_requests(request:Request):
+    """
+    Get all pending registration requests
+    
+    Goal: Retrieve all insurance company registration requests for review
+    Path: GET /administration/registration-requests/
+    Authentication: JWT required
+    
+    Response:
+    - 200: [RegistrationRequestSerializer objects] - List of pending requests
+    """
     with schema_context('public'):
         requests = RegistrationRequest.objects.all()
     return Response(RegistrationRequestSerializer(requests,many=True).data)
@@ -29,6 +39,17 @@ def get_registration_requests(request:Request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def approve_registration_request(request:Request,request_id:int):
+    """
+    Approve insurance company registration request
+    
+    Goal: Create new tenant and admin user from approved registration request
+    Path: POST /administration/registration-requests/{request_id}/approve/
+    Authentication: JWT required
+    
+    Response:
+    - 200: {"message": "Registration approved", "insurance_company": InsuranceCompanySerializer object, "domain": "domain.com"}
+    - 404: Registration request not found
+    """
     with schema_context('public'):
         reg_req = get_object_or_404(RegistrationRequest,pk=request_id)
 
@@ -78,6 +99,17 @@ def approve_registration_request(request:Request,request_id:int):
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
 def reject_registration_request(request:Request,request_id:int):
+    """
+    Reject insurance company registration request
+    
+    Goal: Delete registration request without creating tenant
+    Path: DELETE /administration/registration-requests/{request_id}/reject/
+    Authentication: JWT required
+    
+    Response:
+    - 200: {"message": "Registration rejected"}
+    - 404: Registration request not found
+    """
     with schema_context('public'):
         reg_req = get_object_or_404(RegistrationRequest,pk=request_id)
         reg_req.delete()
@@ -89,6 +121,27 @@ def reject_registration_request(request:Request,request_id:int):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def add_global_admin(request:Request):
+    """
+    Add global platform administrator
+    
+    Goal: Create global admin user with platform-wide access
+    Path: GET /administration/add-global-admin/
+    Authentication: JWT required
+    
+    Request Body:
+    {
+        "email": "admin@platform.com",
+        "username": "global_admin",
+        "phone_number": "+1234567890",
+        "first_name": "Admin",
+        "last_name": "User",
+        "password": "securepassword"
+    }
+    
+    Response:
+    - 200: {"message": "Global admin added", "user": UserSerializer object}
+    - 400: Validation errors
+    """
     user_ser = UserSerializer(data=request.data)
     if user_ser.is_valid():
         user = user_ser.save(scope='global',is_admin=True)

@@ -13,6 +13,16 @@ from rest_framework.permissions import IsAuthenticated
 
 @api_view(['GET'])
 def test(request:Request):
+    """
+    Development test endpoint
+    
+    Goal: Test tenant context and development environment
+    Path: GET /users/
+    Authentication: Not required
+    
+    Response:
+    - 200: Test response with tenant information
+    """
     print(request.tenant.id)
     print(request.tenant)
     return Response('gg')
@@ -20,6 +30,28 @@ def test(request:Request):
 
 @api_view(['POST'])
 def add_user(request:Request):
+    """
+    Register new user in tenant system
+    
+    Goal: Create new user account within current tenant
+    Path: POST /users/add-user/
+    Authentication: Not required
+    
+    Request Body:
+    {
+        "email": "user@example.com",
+        "username": "username",
+        "phone_number": "+1234567890",
+        "role": "call_center|adjuster|senior_adjuster|manager|admin",
+        "first_name": "John",
+        "last_name": "Doe",
+        "password": "securepassword"
+    }
+    
+    Response:
+    - 200: {"success": true, "message": "the user has been added successfully", "user": UserSerializer object}
+    - 400: Validation errors
+    """
     #get the req body
     user_ser = UserSerializer(data=request.data)
     if user_ser.is_valid():
@@ -36,6 +68,24 @@ def add_user(request:Request):
 
 @api_view(['POST'])
 def login(request:Request):
+    """
+    User authentication and token generation
+    
+    Goal: Authenticate user credentials and generate JWT tokens
+    Path: POST /users/login/
+    Authentication: Not required
+    
+    Request Body:
+    {
+        "email": "user@example.com",
+        "password": "userpassword"
+    }
+    
+    Response:
+    - 200: {"refresh": "jwt_refresh_token", "access": "jwt_access_token"}
+    - 400: {"error": "email and password fields are required"}
+    - 401: {"error": "Invalid credentials"}
+    """
     email = request.data.get('email',None)
     password = request.data.get('password',None)
 
@@ -58,6 +108,22 @@ def login(request:Request):
 
 @api_view(['GET'])
 def generate_reset_token(request:Request):
+    """
+    Generate password reset code
+    
+    Goal: Create 6-digit reset code for password recovery
+    Path: GET /users/generate-reset-token/
+    Authentication: Optional (uses authenticated user or email from body)
+    
+    Request Body (if not authenticated):
+    {
+        "email": "user@example.com"
+    }
+    
+    Response:
+    - 200: {"detail": "the reset code has been sent to you successfully"}
+    - 400: {"error": "no email was provided"} or {"error": "no account with this email is registered into our system"}
+    """
     if request.user.is_authenticated:
         user = request.user
         email = request.user.email
@@ -84,6 +150,22 @@ def generate_reset_token(request:Request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def update_email(request:Request):
+    """
+    Update user email address
+    
+    Goal: Change authenticated user's email address
+    Path: POST /users/update-email/
+    Authentication: JWT required
+    
+    Request Body:
+    {
+        "new_email": "newemail@example.com"
+    }
+    
+    Response:
+    - 200: {"detail": "the email has been updated successfully", "user": UserSerializer object}
+    - 400: {"error": "new email is required"}, {"error": "new email is the same as the old email"}, or {"error": "new email is already in use"}
+    """
     old_email = request.user.email
     new_email = request.data.get('new_email',None)
     if not new_email:
@@ -102,6 +184,24 @@ def update_email(request:Request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def update_password(request:Request):
+    """
+    Update user password with validation
+    
+    Goal: Change authenticated user's password with old password verification
+    Path: POST /users/update-password/
+    Authentication: JWT required
+    
+    Request Body:
+    {
+        "old_password": "currentpassword",
+        "new_password": "newpassword",
+        "new_password_confirm": "newpassword"
+    }
+    
+    Response:
+    - 200: {"detail": "the password has been updated successfully", "user": UserSerializer object}
+    - 400: {"error": "old password and new password are required"}, {"error": "old password is incorrect"}, or {"error": "new password and new password confirm do not match"}
+    """
     old_password = request.data.get('old_password',None)
     new_password = request.data.get('new_password',None)
     new_password_confirm = request.data.get('new_password_confirm',None)

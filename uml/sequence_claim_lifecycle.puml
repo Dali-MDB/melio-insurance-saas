@@ -1,0 +1,134 @@
+@startuml Sequence Diagram - Claim Lifecycle
+
+!define ACTOR_COLOR #FFE0B2
+!define SYSTEM_COLOR #E3F2FD
+!define DATABASE_COLOR #F3E5F5
+
+actor "Call Center Agent" as CCA
+actor "Claims Adjuster" as CA
+actor "Senior Adjuster" as SA
+actor "Claims Manager" as CM
+participant "Insurance API" as API
+participant "Claims Service" as CS
+participant "Policies Service" as PS
+participant "Users Service" as US
+participant "Database" as DB
+participant "File Storage" as FS
+
+== Claim Creation ==
+CCA -> API: POST /policy/{id}/claims/
+note right: Create new claim with incident details
+API -> PS: Validate Policy
+PS -> DB: Check policy exists & active
+PS --> API: Policy valid
+API -> CS: Create Claim
+CS -> DB: Save claim (status: 'reported')
+CS --> API: Claim created with auto-generated number
+API --> CCA: 201 Created
+
+== Claim Assignment ==
+CM -> API: POST /claims/{id}/assign/?user_id={uuid}
+note right: Assign claim to adjuster
+API -> US: Validate user exists
+US -> DB: Check user role (adjuster/senior)
+US --> API: User valid
+API -> CS: Assign claim
+CS -> DB: Update claim.assigned_to
+CS --> API: Assignment successful
+API --> CM: 200 Updated claim
+
+== Initial Review ==
+CA -> API: PUT /claims/{id}/update-status/?new_status=under_review
+API -> CS: Update status
+CS -> DB: Validate status transition
+CS -> DB: Update claim status
+CS --> API: Status updated
+API --> CA: 200 Updated claim
+
+CA -> API: POST /claims/{id}/add-note/
+note right: Add internal review notes
+API -> CS: Create note
+CS -> DB: Save note (is_internal=true)
+CS --> API: Note created
+API --> CA: 201 Note created
+
+== Investigation Phase ==
+CA -> API: PUT /claims/{id}/update-status/?new_status=investigation
+API -> CS: Update status
+CS -> DB: Update claim status
+CS --> API: Status updated
+API --> CA: 200 Updated claim
+
+CA -> API: POST /claims/{id}/add-document/
+note right: Upload supporting documents
+API -> CS: Process document
+CS -> FS: Store file
+CS -> DB: Save document metadata
+CS --> API: Document uploaded
+API --> CA: 201 Document created
+
+CA -> API: POST /claims/{id}/add-note/
+note right: Document investigation findings
+API -> CS: Create note
+CS -> DB: Save investigation notes
+CS --> API: Note created
+API --> CA: 201 Note created
+
+== Manager Review ==
+CA -> API: PUT /claims/{id}/update-status/?new_status=waiting_approval
+API -> CS: Update status
+CS -> DB: Update claim status
+CS --> API: Status updated
+API --> CA: 200 Updated claim
+
+CM -> API: GET /claims/{id}/
+API -> CS: Retrieve claim
+CS -> DB: Get claim with notes & documents
+CS --> API: Claim details
+API --> CM: 200 Claim data
+
+CM -> API: POST /claims/{id}/add-note/
+note right: Add manager decision notes
+API -> CS: Create note
+CS -> DB: Save manager notes
+CS --> API: Note created
+API --> CM: 201 Note created
+
+== Approval Decision ==
+alt Claim Approved
+    CM -> API: PUT /claims/{id}/update-status/?new_status=approved
+    API -> CS: Update status
+    CS -> DB: Update claim status & approved_amount
+    CS --> API: Status updated
+    API --> CM: 200 Updated claim
+    
+    CM -> API: PUT /claims/{id}/update-status/?new_status=payment_processing
+    API -> CS: Update status
+    CS -> DB: Update claim status
+    CS --> API: Status updated
+    API --> CM: 200 Updated claim
+    
+    CM -> API: PUT /claims/{id}/update-status/?new_status=paid
+    API -> CS: Update status
+    CS -> DB: Update claim status
+    CS --> API: Status updated
+    API --> CM: 200 Updated claim
+
+else Claim Denied
+    CM -> API: PUT /claims/{id}/update-status/?new_status=denied
+    API -> CS: Update status
+    CS -> DB: Update claim status
+    CS --> API: Status updated
+    API --> CM: 200 Updated claim
+end
+
+== Claim Closure ==
+CM -> API: PUT /claims/{id}/update-status/?new_status=closed
+API -> CS: Update status
+CS -> DB: Update claim status
+CS --> API: Status updated
+API --> CM: 200 Updated claim
+
+note over CS, DB: Claim lifecycle complete
+
+@enduml
